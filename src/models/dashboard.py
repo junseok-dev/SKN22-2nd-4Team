@@ -157,10 +157,10 @@ if df is not None and model is not None:
     
     kpi1.metric("총 관리 고객", f"{total_customers:,}명")
     kpi2.metric("집중 관리 대상 (Warning+)", f"{warning_customers:,}명", delta="요주의")
-    kpi3.metric("총 기대 손실액", f"${total_revenue_at_risk:,.0f}")
+    kpi3.metric("총 기대 손실액", f"€{total_revenue_at_risk:,.0f}")
     kpi4.metric(
         "캠페인 방어 효과 (ROI)", 
-        f"${saved_revenue:,.0f}", 
+        f"€{saved_revenue:,.0f}", 
         delta=f"이탈률 -{improvement_rate}% 가정"
     )
     
@@ -186,18 +186,114 @@ if df is not None and model is not None:
         
     with c2:
         st.subheader("주요 이탈 원인/전략 분포")
-        # '일반 유지 관리'는 제외하고 시각화
-        strategy_counts = df['Strategy'].value_counts().drop('일반 유지 관리', errors='ignore')
-        fig_bar = px.bar(
-            x=strategy_counts.index, 
-            y=strategy_counts.values,
-            color=strategy_counts.index,
-            labels={'x': '전략 유형', 'y': '대상 고객 수'}
-        )
-        st.plotly_chart(fig_bar, use_container_width=True)
+        
+        # 탭 구성: 고객 수 vs 금액(Risk Value)
+        tab1, tab2 = st.tabs(["👥 대상 고객 수", "💰 전략별 기대 손실액"])
+        
+        # 공통 필터: '일반 유지 관리' 제외
+        chart_df = df[df['Strategy'] != '일반 유지 관리']
+        
+        # --- Tab 1: 기존 카운트 차트 ---
+        with tab1:
+            strategy_counts = chart_df['Strategy'].value_counts()
+            fig_bar = px.bar(
+                x=strategy_counts.index, 
+                y=strategy_counts.values,
+                color=strategy_counts.index,
+                labels={'x': '전략 유형', 'y': '대상 고객 수'}
+            )
+            # 탭 내부 차트 높이 등 조정 가능
+            st.plotly_chart(fig_bar, use_container_width=True)
+            
+        # --- Tab 2: 기대 손실액 (Stacked by Risk Level) ---
+        with tab2:
+            # 전략 및 위험 등급별로 그룹화하여 합계 계산
+            risk_agg = chart_df.groupby(['Strategy', 'Risk Level'], as_index=False)['risk_value'].sum()
+            
+            # Risk Level 순서 정렬 (Critical이 위로 오거나 강조되도록)
+            risk_order = ['Safe', 'Attention', 'Warning', 'Critical']
+            
+            fig_revenue = px.bar(
+                risk_agg,
+                x='Strategy',
+                y='risk_value',
+                color='Risk Level',
+                category_orders={'Risk Level': risk_order}, # 범례 순서 고정
+                color_discrete_map={
+                    'Safe': '#66bb6a', 'Attention': '#2196f3', 
+                    'Warning': '#ffa726', 'Critical': '#ff4b4b'
+                },
+                labels={'risk_value': '기대 손실액 (€)', 'Strategy': '전략 유형'}
+            )
+            
+            # 포맷팅 및 디자인 개선
+            fig_revenue.update_traces(hovertemplate='%{y:€,.0f}') # 툴팁: €표시 및 천단위 콤마, 소수점 제거
+            
+            # 총합 텍스트 추가를 위한 데이터 계산
+            total_rev = chart_df.groupby('Strategy', as_index=False)['risk_value'].sum()
+            
+            # Scatter Trace로 텍스트 추가 (Stacked Bar 위에 표시)
+            fig_revenue.add_trace(
+                go.Scatter(
+                    x=total_rev['Strategy'], 
+                    y=total_rev['risk_value'],
+                    text=total_rev['risk_value'],
+                    mode='text',
+                    texttemplate='%{text:€,.0f}', # 텍스트 포맷: €1,234
+                    textposition='top center',
+                    showlegend=False,
+                    hoverinfo='skip'
+                )
+            )
+
+            fig_revenue.update_layout(
+                yaxis_tickformat='€2s',   # 축 단위 표시 (K, M)
+                xaxis={'categoryorder':'total descending'}, # 1. 막대 정렬: 총합 기준 내림차순
+                bargap=0.4, # 2. 디자인: 막대 두께를 얇게
+                margin=dict(t=50) # 상단 여백 확보 (텍스트 잘림 방지)
+            )
+            
+            st.plotly_chart(fig_revenue, use_container_width=True)
         
     st.markdown("---")
     
+    # 전략 가이드 섹션
+    with st.expander("ℹ️ 용어 가이드: 위험 등급과 마케팅 전략 용어 풀이", expanded=False):
+        st.markdown("""
+        ### 1. 🚦 위험 등급 정의 (Risk Levels)
+        - **🔴 Critical (위험):** 이탈 확률 **85% 초과**. 즉각적인 조치가 필요한 최고 위험군.
+        - **🟠 Warning (주의):** 이탈 확률 **70% ~ 85%**. 이탈 징후가 뚜렷하여 집중 관리 필요.
+        - **🟡 Attention (관심):** 이탈 확률 **40% ~ 70%**. 케어가 필요한 잠재적 위험군.
+        - **🟢 Safe (안정):** 이탈 확률 **40% 이하**. 안정적인 장기 충성 고객.
+
+        ---
+
+        ### 2. 🏹 마케팅 전략 가이드 (Marketing Strategies)
+        - **🚨 VIP 전담 케어:**
+            - **대상:** 이탈 확률 85% 이상(Critical) + 월 요금 상위 20% (High Bill)
+            - **설명:** 놓치면 매출 타격이 큰 최상위 핵심 고객입니다. 무조건 잡아야 합니다.
+
+        - **📞 불만 전담 마크:**
+            - **대상:** 고객센터 전화(CS Calls) 3회 이상
+            - **설명:** 서비스에 대한 불만이 누적된 상태입니다. 선제적 해피콜로 불만을 해소해야 합니다.
+
+        - **🌍 국제전화 요금제 제안:**
+            - **대상:** 국제전화 요금 상위 20% + 국제전화 전용 플랜 미가입
+            - **설명:** 국제전화를 비싸게 쓰고 있는 고객입니다. 할인 요금제로 유도하면(Upselling) 만족도가 올라갑니다.
+
+        - **📼 음성메일 부가서비스 제안:**
+            - **대상:** 음성메일 메시지 20건 이상 + 전용 플랜 미가입
+            - **설명:** 음성메일 사용량이 많은 고객에게 부가서비스 패키지를 제안합니다.
+
+        - **📉 장기 고객 혜택 안내:**
+            - **대상:** 가입 기간 1년 이상 + 사용량 하위 50%
+            - **설명:** 오래된 고객이지만 사용량이 줄어들어 이탈 징후가 보입니다. 혜택을 제공하여 유지해야 합니다.
+
+        - **💰 요금 할인 쿠폰 발송:**
+            - **대상:** 월 요금 상위 30% + 이탈 위험도 'Warning' 이상
+            - **설명:** 특별한 불만은 없으나 요금 부담이나 타사 프로모션 때문에 흔들리는 고객입니다. 가격 혜택이 필요합니다.
+        """)
+        
     # C. 액션 테이블
     st.markdown("### 3. 실전 마케팅 리스트 (Actionable List)")
     
@@ -244,11 +340,11 @@ if df is not None and model is not None:
             ),
             "total_bill": st.column_config.NumberColumn(
                 "월 요금",
-                format="$%.2f"
+                format="€%.2f"
             ),
             "risk_value": st.column_config.NumberColumn(
                 "기대 손실액 (Risk Value)",
-                format="$%.2f"
+                format="€%.2f"
             ),
             "Strategy": "추천 전략"
         },
