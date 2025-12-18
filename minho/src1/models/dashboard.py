@@ -302,7 +302,7 @@ elif page == "2. 솔루션 & 시뮬레이션":
         
         # 디자인
         ax.set_ylabel('이탈률 (%)')
-        ax.set_ylim(0, max(original_churn_rate)*1.2)
+        ax.set_ylim(0, max(y_values)*1.2)
         ax.spines['top'].set_visible(False)
         ax.spines['right'].set_visible(False)
         
