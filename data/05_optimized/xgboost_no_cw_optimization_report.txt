@@ -1,0 +1,17 @@
+Model: XGBoost (No Class Weights)
+Dataset: original
+Best Params: {'lambda': 0.0010521761868451127, 'alpha': 1.8274508859816028, 'subsample': 0.8534286719238086, 'colsample_bytree': 0.8645035840204937, 'max_depth': 9, 'min_child_weight': 1, 'eta': 0.0338452204120114, 'gamma': 0.5793452976256486}
+Best Validation F1: 0.8353778188729645
+Test ROC AUC: 0.9070762368207624
+Optimal Threshold: 0.37
+Test F1 (Optimized): 0.8674698795180723
+
+Classification Report:
+              precision    recall  f1-score   support
+
+         0.0       0.97      0.99      0.98       548
+         1.0       0.95      0.80      0.87        90
+
+    accuracy                           0.97       638
+   macro avg       0.96      0.90      0.92       638
+weighted avg       0.97      0.97      0.96       638

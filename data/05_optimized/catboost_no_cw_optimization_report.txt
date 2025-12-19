@@ -1,0 +1,20 @@
+Model: CatBoost
+Best Params: {'bagging_temperature': 0.5142344384136116, 'depth': 8, 'colsample_bylevel': 0.5232252063599989}
+Best CV F1: 0.8533091082055707
+Test ROC AUC: 0.9117
+Optimal Threshold: 0.36000000000000004
+Test F1 (Optimized): 0.8780487804878049
+
+Confusion Matrix:
+[[546   2]
+ [ 18  72]]
+
+Classification Report:
+              precision    recall  f1-score   support
+
+         0.0       0.97      1.00      0.98       548
+         1.0       0.97      0.80      0.88        90
+
+    accuracy                           0.97       638
+   macro avg       0.97      0.90      0.93       638
+weighted avg       0.97      0.97      0.97       638

@@ -51,7 +51,7 @@ def ppt_visualizations():
     plt.bar(x, y, color=color, width=0.6)
     plt.xlabel('[국내] 낮 통신요금 상위(%)')
     plt.ylabel('이탈률')
-    plt.title('Churn Rate by Day_bill_group')
+    plt.title('주간 통화 요금 구간별 이탈률')
     plt.show()
 
     # 2. 📞 불만 전담 마크 (고객 케어)
@@ -64,12 +64,11 @@ def ppt_visualizations():
             'orange', 'orange','firebrick','orange','orange','firebrick']
 
     plt.bar(x, y, color=color, width=0.6)
-    plt.xlabel('Service Calls')
-    plt.ylabel('Churn Rate')
-    plt.title('Churn Rate by Customer Service Calls')
+    plt.xlabel('고객센터 통화 횟수')
+    plt.ylabel('이탈률')
+    plt.title('고객센터 통화 횟수별 이탈률')
     plt.show()
     
-
 
     # 3. 🌍 국제전화 요금제 제안:
     df2 = df[df['international_plan']==1].copy()
@@ -93,12 +92,9 @@ def ppt_visualizations():
     color = ['lightgray','lightgray','lightgray','lightgray','firebrick']
 
     plt.bar(x, y, color=color, width=0.6)
-    plt.xlabel('International Charge(%)')
-    plt.ylabel('Churn Rate')
-    plt.title('Churn Rate by intl_charge_group')
+    plt.xlabel('국제전화 요금 구간(%)')
+    plt.ylabel('이탈률')
+    plt.title('국제전화 요금 구간별 이탈률')
     plt.show()
    
         
-
-
-
