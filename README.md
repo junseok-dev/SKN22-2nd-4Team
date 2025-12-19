@@ -1,272 +1,111 @@
+# 📡 Telecom Customer Churn Diagnosis Project
 
-# SKN22-2nd-4Team Project
-
-# 📡 Telecom Customer Churn Prediction Project
-
-**통신사 고객 이탈 예측 및 데이터 기반 의사결정 분석**
+**"단순 예측을 넘어, 비즈니스 가치를 창출하는 이탈 방지 솔루션"**
 
 ---
 
-## 1. 프로젝트 개요
+## 1. 프로젝트 개요 (Executive Summary)
 
-본 프로젝트는 통신사 고객 데이터를 기반으로 **고객 이탈(Churn)을 예측**하고,
+### **🎯 목표**
+통신사 고객 데이터를 분석하여 **이탈(Churn)을 사전에 예측**하고, 이를 방지하기 위한 **실질적인 비즈니스 전략**을 수립합니다. 단순한 정확도 경쟁이 아닌, **"왜 이탈하는가?"**에 대한 해석과 **"어떻게 막을 것인가?"**에 대한 액션 플랜을 제시하는 데 초점을 맞췄습니다.
 
-단순 예측 정확도 향상을 넘어 **실제 비즈니스 의사결정에 활용 가능한 인사이트 도출**을 목표로 합니다.
-
-특히 다음 질문에 답하는 것을 핵심 목표로 설정했습니다.
-
-- 고객 이탈은 어떠한 원인으로 발생하는가?
-- 이탈 확률이 높은 고객 그룹은 무엇인가?
-- 이탈을 사전에 관리하면 재무적으로 어떤 효과가 발생하는가?
+### **🔍 핵심 질문**
+1. 이탈을 유발하는 **핵심 원인(Risk Factor)**은 무엇인가?
+2. 이탈 확률이 높은 **고객군(Segment)**은 누구인가?
+3. 이탈을 방어했을 때 얻을 수 있는 **재무적 가치(ROI)**는 얼마인가?
 
 ---
 
-## 2. 데이터 개요
+## 2. 데이터 개요 (Data Description)
 
--**데이터 소스**: 통신사 고객 사용 이력 데이터
-
--**관측 단위**: 고객(Customer) 단위
-
--**총 데이터 수**: 4,250 rows
-
--**Target 변수**:
-
-  -`churn` (1 = 이탈, 0 = 유지)
-
--**데이터 특성**:
-
-- 이탈 고객 비율 약 **14~15%**
-- 클래스 불균형 존재
+- **데이터 소스**: 통신사 고객 사용 이력 데이터 (4,250 rows)
+- **Target 변수**: `churn` (1 = 이탈, 0 = 유지)
+- **데이터 특성**:
+  - **불균형 데이터**: 이탈률 약 **14%**
+  - **주요 피처**: 주간/야간 통화량, 국제전화 요금, 고객센터 통화 횟수, 요금제 가입 여부 등
 
 ---
 
-## 3. 프로젝트 구조
+## 3. 핵심 방법론 (Methodology)
+
+본 프로젝트는 데이터 전처리와 모델링 기법의 정교한 조합을 통해 최적의 성능을 도출했습니다 상세 내용은 `01_preprocessing_report` 및 `02_training_report`를 참조하십시오.
+
+### **🛠 1. 데이터 전처리 (Preprocessing)**
+- **이상치(Outlier) 보존**: 'Heavy User'의 패턴(높은 통화량 등)이 실제 이탈과 밀접한 연관이 있음을 확인하여, 이상치를 인위적으로 제거하지 않고 보존했습니다.
+- **인코딩(Encoding)**: CatBoost의 자체 처리 방식 대신 **원-핫 인코딩(One-Hot Encoding)**을 적용하여, 범주형 변수의 영향력을 독립적인 피처로 분리·강화했습니다.
+
+### **⚖️ 2. 불균형 데이터 처리 (Handling Imbalance)**
+- **실험**: SMOTE, SMOTE-Tomek, SMOTE-ENN 등 다양한 오버샘플링 기법과 Class Weight 적용을 비교 실험했습니다.
+- **최종 선택**: **"No Class Weights + Original Data"**
+  - **이유**: 인위적인 데이터 증강이나 가중치 부여가 오히려 정밀도(Precision)를 떨어뜨리고 노이즈를 유발함을 확인했습니다. 
+  - **결과**: 원본 데이터의 패턴을 그대로 학습시켰을 때 **F1-Score 0.88**이라는 가장 우수한 성과를 달성했습니다.
+
+### **🤖 3. 모델링 (Modeling)**
+- **최종 모델**: **CatBoost Classifier**
+- **최적화**: Optuna를 활용해 `depth`, `bagging_temperature` 등 핵심 파라미터를 최적화했습니다.
+
+---
+
+## 4. 최종 성과 (Performance)
+
+테스트 데이터(Support 638명) 기준, 실전 비즈니스에 즉시 투입 가능한 수준의 **높은 신뢰도**를 확보했습니다.
+
+| 지표 (Metric) | 결과 (Result) | 비즈니스 의미 |
+| :--- | :--- | :--- |
+| **ROC AUC** | **0.91** | 우수한 판별력 (이탈자와 비이탈자를 정확히 구분) |
+| **Precision** | **0.97** | **오탐(False Positive) 최소화**. 잘못된 타겟팅으로 인한 마케팅 비용 낭비 방지 |
+| **Recall** | **0.80** | **실제 이탈자의 80%를 사전에 탐지**하여 방어 기회 확보 |
+| **F1-Score** | **0.88** | 정밀도와 재현율의 이상적인 균형 달성 |
+
+---
+
+## 5. 프로젝트 구조 (Directory Structure)
 
 ```bash
-
-├──01_preprocessing_report
-
-│   └──preprocessing_report.md      # 데이터 전처리 상세 보고서
-
-│
-
-├──02_training_report
-
-│   ├──benchmark_original.csv
-
-│   ├──benchmark_smote.csv
-
-│   ├──benchmark_smote_tomek.csv
-
-│   ├──benchmark_smote_enn.csv
-
-│   ├──roc_curve_original.png
-
-│   ├──roc_curve_smote.png
-
-│   ├──roc_curve_smote_tomek.png
-
-│   ├──roc_curve_smote_enn.png
-
-│   └──training_report.md            # 모델 학습 및 비교 보고서
-
-│
-
-├──03_trained_model
-
-│   ├──churn_model.cbm               # 최종 학습 CatBoost 모델
-
-│   ├──features.pkl                  # 사용 feature 목록
-
-│   └──mean_values.pkl               # 결측 보정 기준값
-
-│
-
-├──data
-
-│   ├──01_raw                         # 원본 데이터
-
-│   ├──03_resampled                  # 샘플링 실험 데이터
-
-│   ├──04_results                    # 실험 결과 저장
-
-│   └──05_optimized                  # 최종 최적화 데이터
-
-│
-
-├──notebooks
-
-│   ├──EDA.ipynb                     # 탐색적 데이터 분석
-
-│   ├──EDA.md
-
-│   └──lee_modeling.ipynb             # 모델링 실험 노트북
-
-│
-
-├──presentation_assets               # 발표 자료
-
-│
-
-└──src
-
-    ├──data
-
-    ├──models
-
-    └──visualization
-
+📦 SKN22-2nd-4Team
+ ┣ 📂 01_preprocessing_report   # 데이터 전처리 상세 보고서
+ ┣ 📂 02_training_report        # 모델 실험 및 성능 평가 보고서
+ ┣ 📂 03_trained_model          # 최종 학습된 모델 (churn_model.cbm)
+ ┣ 📂 data                      # 데이터 저장소 (Raw, Resampled, Optimized)
+ ┣ 📂 notebooks                 # EDA 및 실험용 Jupyter Notebook
+ ┣ 📂 presentation_assets       # 발표 및 리포팅용 시각화 자료
+ ┣ 📂 src                       # 소스 코드
+ ┃ ┣ 📂 data                    # 전처리 파이프라인
+ ┃ ┣ 📂 experiments             # 실험 파이프라인      
+ ┃ ┣ 📂 models                  # 모델 학습, 최적화, 벤치마크 스크립트
+ ┃ ┗ 📂 visualization           # 시각화 스크립트
+ ┣ 📜 app.py                    # Streamlit 기반 대시보드 애플리케이션
+ ┣ 📜 requirements.txt          # 의존성 패키지 목록
+ ┗ 📜 README.md                 # 프로젝트 문서 (Current)
 ```
 
 ---
 
-## 4. 데이터 전처리 요약
+## 6. 사용 가이드 (How to Use)
 
-### 🚿데이터 세정
+### **1. 🚀 대시보드 실행 (Streamlit App)**
+본 프로젝트는 이해관계자가 결과를 직관적으로 확인하고 시뮬레이션할 수 있는 **웹 대시보드**를 제공합니다.
 
-- 고유 식별자(`id`) 및 관리용 변수 제거
-- 모델 학습에 필요한 레이블이 있는 데이터(4,250 rows)만 사용
+```bash
+# 필수 패키지 설치
+pip install -r requirements.txt
 
-### 💁‍♂️ 인코딩 전략
+# 대시보드 실행
+streamlit run app.py
+```
 
--**이진 변수(Binary Features)**
+### **2. 🧪 모델 최적화 및 실험 (Optimization)**
+새로운 데이터나 파라미터로 모델을 다시 최적화하려면 아래 스크립트를 실행합니다.
 
-- 대상: `international_plan`, `voice_mail_plan`, `churn`
-- 변환 방식:
-
-  `yes / no` → `1 / 0`
-- 목적: 모델 수렴 속도 개선 및 연산 효율 향상
-
--**범주형 변수(Categorical Features)**
-
-- 대상: `state`, `area_code`
-- 처리 방식: Label Encoding 적용
-- 참고: CatBoost의 자체 범주형 처리 기능을 고려하였으나,
-
-  전처리 파이프라인의 일관성을 위해 수치형 변환을 우선 적용
+```bash
+# CatBoost 최적화 (Raw Data + No Class Weights)
+python src/models/optimization.py
+```
 
 ---
 
-## 5. 이상치 및 클래스 불균형 처리
+## 7. 기대 효과 및 결론
 
-### 🚮 이상치 처리 (Outlier Handling)
-
--**탐지 기법**: IQR (Interquartile Range)
-
-- 사용량 및 요금 관련 극단값은 실제 고객의 **Heavy User 패턴**을 반영한다고 판단
-- 이탈 신호가 포함된 중요 패턴 보존을 위해
-
-  **최종 모델에서는 이상치를 제거하지 않고 유지**
-
-### 🚩 클래스 불균형 대응 (Imbalance Mitigation)
-
--**검토한 방법**
-
-- SMOTE
-- SMOTE-Tomek
-- SMOTE-ENN
-
--**문제점**
-
-- 샘플링 기반 접근은 일부 모델에서 과적합(Overfitting) 유발 가능성 확인
-
--**최종 선택**
-
-- 데이터 증강 없이 **Class Weighting 방식 채택**
-- CatBoost의 `scale_pos_weight` 또는 `balanced` 옵션 활용
-
--**효과**
-
-- 소수 클래스(이탈 고객)에 대한 재현율(Recall) 유의미한 개선
-- 과적합 최소화
-
----
-
-## 6. 모델 학습 및 성능 요약 (Training Summary)
-
-### 모델링 접근
-
-- 다양한 머신러닝 알고리즘을 대상으로 **벤치마킹 실험**을 수행하여 성능을 비교
-- 실험 대상:
-
-  - Decision Tree, Random Forest, XGBoost, LightGBM, CatBoost
-  - ANN, SVM, Logistic Regression
-- 모든 모델은 **동일한 Test Set (Support 638)** 기준으로 평가
-
----
-
-### 최종 모델: CatBoost
-
-**CatBoost + One-Hot Encoding(OHE)** 조합이 가장 안정적이고 실전적인 성능을 기록하여 최종 모델로 선정
-
-#### 선정 이유
-
-- 범주형 변수의 카디널리티가 낮아 OHE 적용 시 이탈 패턴 분리 효과가 큼
-- 샘플링(SMOTE 계열) 및 클래스 가중치 적용 없이도 높은 성능 확보
-- 원본 데이터 분포를 유지하여 오탐(False Positive) 최소화
-
----
-
-### 하이퍼파라미터 최적화
-
--**최적화 도구**: Optuna
-
--**전처리 방식**: One-Hot Encoding / Class Weight 미적용
-
--**주요 최적 파라미터**
-
-  -`depth`: 8
-
-  -`bagging_temperature`: 0.51
-
-  -`colsample_bylevel`: 0.52
-
----
-
-### 최종 성능 지표 (Test Set 기준)
-
-| Metric        | Value  | 설명 |
-
-|--------------|--------|------|
-
-| **F1-Score** | **0.88** | 정밀도·재현율 균형 |
-
-| **Recall**   | **0.80** | 실제 이탈자 90명 중 72명 검출 |
-
-| **Precision**| **0.97** | 오탐 2건으로 매우 높은 신뢰도 |
-
-| **ROC AUC**  | **0.91** | 전반적 분류 성능 |
-
-| **Threshold**| **0.36** | 비즈니스 효율 최적 임계값 |
-
----
-
-### 핵심 결론
-
-- 불균형 데이터 환경에서도 **인위적인 데이터 보정 없이** 높은 성능 달성
-- 원-핫 인코딩과 CatBoost 조합이 이탈 고객의 패턴을 가장 명확히 포착
-- 높은 정밀도를 기반으로 **실제 이탈 관리 시 오탐 비용 최소화 가능**
-- 향후 신규 데이터 유입 시 피처 영향도 모니터링을 통해 지속적 고도화 예정
-
----
-
-## 7. 프로젝트 특징
-
-- 단순 예측 정확도 중심의 모델링이 아닌,
-
-  **데이터 전처리 및 클래스 불균형 대응 전략의 효과를 비교·검증** 하는 데 중점을 둔 프로젝트
-- 모든 모델 실험은 **동일한 테스트 셋(Test Set)** 을 기준으로 평가하여
-
-  샘플링 기법 및 가중치 전략 간의 성능 차이를 공정하게 비교
-- 샘플링 기반 접근(SMOTE 계열)과
-
-  **Class Weighting 기반 접근을 병렬적으로 실험** 하여
-
-  재현율(Recall)과 일반화 성능 간의 균형을 검증
-- 모델 결과를 단순 예측 성능으로 끝내지 않고,
-
-  이후 **전략 시뮬레이션 및 대시보드 형태로 확장 가능한 구조** 로 설계
-
--**실제 비즈니스 의사결정(이탈 관리 전략 수립)** 에 활용될 수 있도록
-
-  전체 파이프라인을 구성
+1. **마케팅 효율 극대화**: **97%의 높은 정밀도**로, 정말로 떠날 것 같은 고객에게만 혜택을 집중하여 예산을 절감합니다.
+2. **맞춤형 방어 전략**: VIP, 국제전화 사용자, 불만 고객 등 **세그먼트별 맞춤 전략**을 통해 이탈을 효과적으로 차단합니다.
+3. **지속 가능한 시스템**: 단순 일회성 분석이 아닌, **데이터 적재 → 학습 → 시각화 → 액션**으로 이어지는 선순환 구조를 구축했습니다.

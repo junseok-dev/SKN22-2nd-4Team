@@ -209,7 +209,7 @@ def run_optimization():
         f"Test F1 (Optimized): {best_f1_cb}\n\n"
         f"Classification Report:\n{classification_report(y_test_cb, y_pred_cb)}"
     )
-    cb_report_path = os.path.join(OUTPUT_DIR, "catboost_optimization_report_2.txt")
+    cb_report_path = os.path.join(OUTPUT_DIR, "catboost_optimization_report.txt")
     with open(cb_report_path, "w") as f:
         f.write(report_text_cb)
     print(f"CatBoost Result saved to: {cb_report_path}")

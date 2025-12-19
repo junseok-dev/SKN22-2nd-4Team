@@ -159,7 +159,7 @@ def get_trained_model():
         f"Classification Report:\n{report}"
     )
     
-    save_path = os.path.join(OUTPUT_DIR, "catboost_optimization_report.txt")
+    save_path = os.path.join(OUTPUT_DIR, "catboost_no_cw_optimization_report.txt")
     with open(save_path, "w") as f:
         f.write(result_text)
     print(f"결과가 저장되었습니다: {save_path}")
