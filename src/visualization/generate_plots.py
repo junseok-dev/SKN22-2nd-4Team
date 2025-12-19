@@ -18,7 +18,7 @@ plt.rcParams['axes.unicode_minus'] = False
 
 def load_data():
     df = pd.read_csv(DATA_PATH)
-    # Preprocessing
+    # 전처리
     if 'international_plan' in df.columns:
         df['international_plan'] = (df['international_plan'] == 'yes').astype(int)
     if 'voice_mail_plan' in df.columns:
@@ -28,7 +28,7 @@ def load_data():
 def generate_visualizations():
     df = load_data()
     
-    # 1. Class Distribution (Before Sampling)
+    # 1. 클래스 분포 (샘플링 전)
     plt.figure(figsize=(8, 6))
     sns.countplot(x='churn', data=df, palette='viridis')
     plt.title('클래스 분포 (불균형 데이터)')
@@ -37,11 +37,12 @@ def generate_visualizations():
     plt.savefig(os.path.join(OUTPUT_DIR, '01_class_distribution.png'))
     plt.close()
     
-    # 2. Correlation Heatmap
+    # 2. 상관관계 히트맵
     plt.figure(figsize=(12, 10))
-    # Select numeric features only + target
+    # 수치형 변수와 타겟만 선택
     numeric_df = df.select_dtypes(include=['number'])
-    # Add churn if it's 'yes'/'no' -> convert first
+    # churn이 'yes'/'no'인 경우 숫자로 변환
+    # 먼저 변환 작업 수행
     if df['churn'].dtype == 'object':
          numeric_df['churn'] = (df['churn'] == 'yes').astype(int)
     else:
@@ -53,21 +54,21 @@ def generate_visualizations():
     plt.savefig(os.path.join(OUTPUT_DIR, '02_correlation_heatmap.png'))
     plt.close()
 
-    # Model Evaluation Plots
+    # 모델 평가 그래프
     model = CatBoostClassifier()
     model.load_model(MODEL_PATH)
     
-    # Prepare X, y
+    # X, y 준비
     feature_names = model.feature_names_
     try:
         X = df[feature_names]
-        # Target needs to be numeric
+        # 타겟은 수치형이어야 함
         y = (df['churn'] == 'yes').astype(int) if df['churn'].dtype == 'object' else df['churn']
         
-        # Split for evaluation demo (8:2)
+        # 평가 데모를 위한 분할 (8:2)
         X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42, stratify=y)
         
-        # 3. Feature Importance
+        # 3. 변수 중요도 (Feature Importance)
         importances = model.get_feature_importance()
         fi_df = pd.DataFrame({'Feature': feature_names, 'Importance': importances})
         fi_df = fi_df.sort_values(by='Importance', ascending=False).head(10)
@@ -79,7 +80,7 @@ def generate_visualizations():
         plt.savefig(os.path.join(OUTPUT_DIR, '03_feature_importance.png'))
         plt.close()
         
-        # 4. Confusion Matrix
+        # 4. 혼동 행렬 (Confusion Matrix)
         y_pred = model.predict(X_test)
         cm = confusion_matrix(y_test, y_pred)
         
@@ -91,7 +92,7 @@ def generate_visualizations():
         plt.savefig(os.path.join(OUTPUT_DIR, '04_confusion_matrix.png'))
         plt.close()
         
-        # 5. ROC Curve
+        # 5. ROC 곡선
         y_prob = model.predict_proba(X_test)[:, 1]
         fpr, tpr, _ = roc_curve(y_test, y_prob)
         roc_auc = auc(fpr, tpr)

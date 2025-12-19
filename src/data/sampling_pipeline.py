@@ -6,20 +6,20 @@ from imblearn.over_sampling import SMOTE
 from imblearn.combine import SMOTETomek, SMOTEENN
 from sklearn.model_selection import train_test_split
 
-# Add src to sys.path to import local modules if not running from root
+# 루트에서 실행하지 않을 경우를 대비해 로컬 모듈을 임포트할 수 있도록 src를 sys.path에 추가
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../../')))
 
-# Import from the previous step
+# 이전 단계에서 임포트
 try:
     from src.data.preprocess_and_split import load_data, preprocess_data, TARGET_COL, RANDOM_STATE
 except ImportError:
-    # Fallback if running from src/data directly
+    # src/data에서 직접 실행하는 경우를 위한 폴백
     from preprocess_and_split import load_data, preprocess_data, TARGET_COL, RANDOM_STATE
 
 OUTPUT_DIR = r'c:\Workspaces\SKN22-2nd-4Team\data\03_resampled'
 
 def get_sampling_strategies():
-    """Returns a dictionary of sampling strategies."""
+    """샘플링 전략 사전(dictionary)을 반환합니다."""
     return {
         'SMOTE': SMOTE(random_state=RANDOM_STATE),
         'SMOTE_Tomek': SMOTETomek(random_state=RANDOM_STATE),
@@ -27,7 +27,7 @@ def get_sampling_strategies():
     }
 
 def print_class_distribution(y, name="Dataset"):
-    """Prints class counts and ratios."""
+    """클래스별 개수와 비율을 출력합니다."""
     counts = y.value_counts().sort_index()
     total = len(y)
     print(f"\n[{name}] Class Distribution:")
@@ -36,15 +36,15 @@ def print_class_distribution(y, name="Dataset"):
         print(f"  Class {label}: {count} ({ratio:.2%})")
 
 def save_resampled_data(X_res, y_res, method_name):
-    """Saves resampled X and y to CSV."""
-    # Ensure dir exists
+    """샘플링된 X와 y를 CSV로 저장합니다."""
+    # 디렉토리가 존재하는지 확인
     os.makedirs(OUTPUT_DIR, exist_ok=True)
     
-    # Save X
+    # X 저장
     x_path = os.path.join(OUTPUT_DIR, f"X_train_{method_name.lower()}.csv")
     X_res.to_csv(x_path, index=False)
     
-    # Save y
+    # y 저장
     y_path = os.path.join(OUTPUT_DIR, f"y_train_{method_name.lower()}.csv")
     y_res.to_csv(y_path, index=False)
     
@@ -53,18 +53,18 @@ def save_resampled_data(X_res, y_res, method_name):
 def main():
     print("=== Starting Sampling Pipeline ===")
     
-    # 1. Load & Preprocess (Reuse logic)
+    # 1. 로드 및 전처리 (로직 재사용)
     df = load_data()
     df_processed = preprocess_data(df)
     
-    # 2. Split (Identical logic to preprocess_and_split.py)
-    # Drop rows with missing targets (unlabeled test set)
+    # 2. 분할 (preprocess_and_split.py와 동일한 로직)
+    # 타겟이 없는 행 제거 (레이블이 없는 테스트 세트)
     df_clean = df_processed.dropna(subset=[TARGET_COL])
     
     y = df_clean[TARGET_COL]
     X = df_clean.drop(columns=[TARGET_COL, 'dataset_source', 'id'], errors='ignore')
     
-    # Determine split size
+    # 분할 크기 결정
     total_samples = len(X)
     if total_samples == 5000:
         test_size_val = 750
@@ -80,9 +80,9 @@ def main():
     )
     
     print(f"Original X_train shape: {X_train.shape}")
-    print_class_distribution(y_train, "Original Train")
+    print_class_distribution(y_train, "원본 학습 데이터")
     
-    # 3. Apply Sampling Strategies
+    # 3. 샘플링 전략 적용
     strategies = get_sampling_strategies()
     
     for name, sampler in strategies.items():
@@ -90,21 +90,21 @@ def main():
         try:
             X_res, y_res = sampler.fit_resample(X_train, y_train)
             
-            # Print verification
-            print_class_distribution(y_res, f"Resampled ({name})")
+            # 확인을 위해 출력
+            print_class_distribution(y_res, f"샘플링됨 ({name})")
             
-            # Save
+            # 저장
             save_resampled_data(X_res, y_res, name)
             
         except Exception as e:
             print(f"ERROR applying {name}: {e}")
 
-    # 4. Save the ORIGINAL test set for consistency
-    # We must also save the original train set for baseline comparison
-    print("\n--- Saving Original Sets ---")
+    # 4. 일관성을 위해 원본 테스트 세트 저장
+    # 베이스라인 비교를 위해 원본 학습 세트도 저장해야 함
+    print("\n--- 원본 세트 저장 중 ---")
     save_resampled_data(X_train, y_train, "original")
     
-    # Save X_test, y_test (Only need to do this once)
+    # X_test, y_test 저장 (한 번만 수행하면 됨)
     x_test_path = os.path.join(OUTPUT_DIR, "X_test.csv")
     y_test_path = os.path.join(OUTPUT_DIR, "y_test.csv")
     X_test.to_csv(x_test_path, index=False)

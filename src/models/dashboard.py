@@ -45,7 +45,7 @@ if df is not None and model is not None:
     
     # --- 2. 배치 예측 및 파생 변수 생성 ---
     
-    # 1. 전처리 (Global Preprocessing) - df에 바로 적용하여 모델 입력 및 전략 로직 모두 해결
+    # 1. 전처리 (글로벌 전처리) - df에 바로 적용하여 모델 입력 및 전략 로직 모두 해결
     if 'international_plan' in df.columns and df['international_plan'].dtype == 'object':
         df['international_plan'] = (df['international_plan'] == 'yes').astype(int)
     if 'voice_mail_plan' in df.columns and df['voice_mail_plan'].dtype == 'object':
@@ -89,9 +89,9 @@ if df is not None and model is not None:
         
     df['Risk Level'] = df['Probability'].apply(get_risk_level)
     
-    # --- 3. 세분화 및 전략 태깅 (Priority Logic) ---
+    # --- 3. 세분화 및 전략 태깅 (우선순위 로직) ---
     
-    # --- 3. 세분화 및 전략 태깅 (Enhanced Priority Logic) ---
+    # --- 3. 세분화 및 전략 태깅 (강화된 우선순위 로직) ---
     
     # 기준값 계산 (벡터 연산 위해 미리 계산)
     # 1. VIP 기준 (Bill Top 20%)
@@ -101,7 +101,7 @@ if df is not None and model is not None:
     # 2. Intl 기준 (Intl Charge Top 20%)
     intl_charge_top_20 = df['total_intl_charge'].quantile(0.8)
     
-    # 3. Usage Drop 기준 (Day Minutes Bottom 50% - 완화됨)
+    # 3. 사용량 감소 기준 (Day Minutes 하위 50% - 완화됨)
     usage_bottom_50 = df['total_day_minutes'].quantile(0.5)
     
     def assign_strategy(row):
@@ -112,18 +112,18 @@ if df is not None and model is not None:
         if (row['Probability'] >= 0.85) and (row['total_bill'] >= bill_top_20):
             return '🚨 VIP 전담 케어'
             
-        # 2. 📞 불만 전담 마크 (CS Care)
+        # 2. 📞 불만 전담 마크 (CS 케어)
         # 조건: CS 전화 >= 3회
         if row['number_customer_service_calls'] >= 3:
             return '📞 불만 전담 마크'
             
-        # 3. 🌍 국제전화 요금제 제안 (Intl Upsell)
+        # 3. 🌍 국제전화 요금제 제안 (국제전화 업셀링)
         # 조건: 국제전화 요금 상위 20% AND 플랜 없음
-        is_intl_plan = (row['international_plan'] == 1) # 0/1 encoded
+        is_intl_plan = (row['international_plan'] == 1) # 0/1 인코딩됨
         if (row['total_intl_charge'] >= intl_charge_top_20) and is_intl_plan:
             return '🌍 국제전화 요금제 제안'
             
-        # 4. 💰 요금 할인 쿠폰 발송 (Price Sensitive)
+        # 4. 💰 요금 할인 쿠폰 발송 (가격 민감형)
         # 조건: 월 요금 상위 30% AND Risk Level >= Warning (Warning, Critical)
         # Warning은 Probability > 0.70 -> 0.75로 상향 조정
         if (row['total_bill'] >= bill_top_30) and (row['Probability'] > 0.75):
@@ -233,7 +233,7 @@ if df is not None and model is not None:
             # 총합 텍스트 추가를 위한 데이터 계산
             total_rev = chart_df.groupby('Strategy', as_index=False)['risk_value'].sum()
             
-            # Scatter Trace로 텍스트 추가 (Stacked Bar 위에 표시)
+            # Scatter Trace로 텍스트 추가 (누적 막대 차트 위에 표시)
             fig_revenue.add_trace(
                 go.Scatter(
                     x=total_rev['Strategy'], 
@@ -271,7 +271,7 @@ if df is not None and model is not None:
 
         ### 2. 🏹 마케팅 전략 가이드 (Marketing Strategies)
         - **🚨 VIP 전담 케어:**
-            - **대상:** 이탈 확률 85% 이상(Critical) + 월 요금 상위 20% (High Bill)
+            - **대상:** 이탈 확률 85% 이상(Critical) + 월 요금 상위 20% (높은 요금)
             - **설명:** 놓치면 매출 타격이 큰 최상위 핵심 고객입니다. 무조건 잡아야 합니다.
 
         - **📞 불만 전담 마크:**
@@ -280,7 +280,7 @@ if df is not None and model is not None:
 
         - **🌍 국제전화 요금제 제안:**
             - **대상:** 국제전화 요금 상위 20% + 국제전화 전용 플랜 미가입
-            - **설명:** 국제전화를 비싸게 쓰고 있는 고객입니다. 할인 요금제로 유도하면(Upselling) 만족도가 올라갑니다.
+            - **설명:** 국제전화를 비싸게 쓰고 있는 고객입니다. 할인 요금제로 유도하면(업셀링) 만족도가 올라갑니다.
 
         - **💰 요금 할인 쿠폰 발송:**
             - **대상:** 월 요금 상위 30% + 이탈 위험도 'Warning' 이상

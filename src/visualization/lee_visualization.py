@@ -18,7 +18,7 @@ plt.rcParams['axes.unicode_minus'] = False
 
 def load_data():
     df = pd.read_csv(DATA_PATH)
-    # Preprocessing
+    # 전처리
     if 'international_plan' in df.columns:
         df['international_plan'] = (df['international_plan'] == 'yes').astype(int)
     if 'voice_mail_plan' in df.columns:
@@ -31,8 +31,8 @@ def load_data():
 
 def ppt_visualizations():
     df = load_data()
-    # 1. 🚨 VIP 전담 케어 (Highest Priority)
-    # 4. 💰 요금 할인 쿠폰 발송 (Price Sensitive)
+    # 1. 🚨 VIP 전담 케어 (최우선 순위)
+    # 4. 💰 요금 할인 쿠폰 발송 (가격 민감군)
     q1 = df['total_bill'].quantile(0.1)
     q2 = df['total_bill'].quantile(0.4)
     q3 = df['total_bill'].quantile(0.7)
@@ -57,7 +57,7 @@ def ppt_visualizations():
     plt.title('Churn Rate by bill_group')
     plt.show()
 
-    # 2. 📞 불만 전담 마크 (CS Care)
+    # 2. 📞 불만 전담 마크 (고객 케어)
     dissatisfaction_df = df.groupby('number_customer_service_calls')['churn'].mean()
 
     dissatisfaction_df.values

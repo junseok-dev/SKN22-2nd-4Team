@@ -59,7 +59,7 @@ class ModelOptimizer:
         self.cat_features = cat_features
         
     def objective(self, trial):
-        # 학습 데이터 안에서도 또 쪼개서 검증 (CV)
+        # 학습 데이터 안에서도 또 쪼개서 검증 (교차 검증)
         cv = StratifiedKFold(n_splits=3, shuffle=True, random_state=RANDOM_STATE)
         
         params = {
@@ -114,7 +114,7 @@ def get_trained_model():
     print(f"최고 CV F1 점수: {study.best_value:.4f}")
     print("최적 파라미터:", study.best_params)
     
-    # --- 최종 검증 (Test Set) ---
+    # --- 최종 검증 (테스트 세트) ---
     print(f"\n최종 모델 학습 및 테스트 데이터 평가 중...")
     
     final_model = CatBoostClassifier(
@@ -126,10 +126,10 @@ def get_trained_model():
         **study.best_params
     )
     
-    # Train 데이터 전체로 학습
+    # 학습 데이터 전체로 학습
     final_model.fit(X_train, y_train)
     
-    # 1. Test Set 평가
+    # 1. 테스트 세트 평가
     y_prob_val = final_model.predict_proba(X_test)[:, 1]
     
     # 임계값 튜닝
@@ -137,7 +137,7 @@ def get_trained_model():
     y_pred_val = (y_prob_val >= best_thresh).astype(int)
     
     # 리포트 출력
-    print("\n--- 최종 결과 리포트 (Test Set) ---")
+    print("\n--- 최종 결과 리포트 (테스트 세트) ---")
     print(f"최적 임계값: {best_thresh:.2f}")
     print(confusion_matrix(y_test, y_pred_val))
     report = classification_report(y_test, y_pred_val)

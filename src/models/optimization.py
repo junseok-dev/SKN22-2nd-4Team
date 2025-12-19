@@ -10,7 +10,7 @@ from sklearn.metrics import f1_score, roc_auc_score, classification_report, prec
 from optuna.samplers import TPESampler
 from optuna.pruners import HyperbandPruner
 
-# Configuration
+# 설정
 DATA_DIR = r'c:\Workspaces\SKN22-2nd-4Team\data\03_resampled'
 OUTPUT_DIR = r'c:\Workspaces\SKN22-2nd-4Team\data\05_optimized'
 RANDOM_STATE = 42
@@ -30,7 +30,7 @@ def load_data(dataset_name):
     return X_train, y_train, X_test, y_test
 
 def find_optimal_threshold(y_true, y_prob):
-    """Finds the threshold that maximizes F1-score."""
+    """F1-score를 최대화하는 임계값을 찾습니다."""
     best_threshold = 0.5
     best_f1 = 0.0
     
@@ -50,8 +50,8 @@ class ModelOptimizer:
         self.y_train = y_train
         self.model_name = model_name
         
-        # Calculate scale_pos_weight for XGBoost (Neg/Pos ratio)
-        # Using simple integer counts
+        # XGBoost용 scale_pos_weight 계산 (Neg/Pos 비율)
+        # 단순 정수 개수 사용
         n_pos = sum(y_train)
         n_neg = len(y_train) - n_pos
         self.scale_pos_weight = n_neg / n_pos if n_pos > 0 else 1.0
@@ -61,12 +61,12 @@ class ModelOptimizer:
         
         if self.model_name == 'XGBoost':
             params = {
-                'booster': 'dart', # Fixed
-                'grow_policy': 'depthwise', # Fixed
+                'booster': 'dart', # 고정
+                'grow_policy': 'depthwise', # 고정
                 'n_estimators': 200,
-                'eval_metric': 'logloss', # Fixed
+                'eval_metric': 'logloss', # 고정
                 'random_state': RANDOM_STATE,
-                'scale_pos_weight': self.scale_pos_weight, # Handle Imbalance
+                'scale_pos_weight': self.scale_pos_weight, # 불균형 처리
                 'lambda': trial.suggest_float('lambda', 1e-3, 10.0, log=True),
                 'alpha': trial.suggest_float('alpha', 1e-3, 10.0, log=True),
                 'subsample': trial.suggest_float('subsample', 0.5, 1.0),
@@ -81,11 +81,11 @@ class ModelOptimizer:
             
         elif self.model_name == 'LightGBM':
             params = {
-                'boosting_type': 'dart', # Fixed
+                'boosting_type': 'dart', # 고정
                 'n_estimators': 200,
                 'random_state': RANDOM_STATE,
                 'verbose': -1,
-                'class_weight': 'balanced', # Handle Imbalance
+                'class_weight': 'balanced', # 불균형 처리
                 'num_leaves': trial.suggest_int('num_leaves', 20, 150),
                 'max_depth': trial.suggest_int('max_depth', 3, 12),
                 'lambda_l1': trial.suggest_float('lambda_l1', 1e-3, 10.0, log=True),
@@ -101,12 +101,12 @@ class ModelOptimizer:
         else:
             raise ValueError(f"Unknown model: {self.model_name}")
 
-        # Optuna pruning integration with Cross Validation
-        # Since standard cross_val_score doesn't support pruning easily, 
-        # we will use a simpler loop or just standard CV for F1.
-        # For simplicity and robustness with F1, we use cross_val_score.
-        # Pruning inside CV is complex without a manual loop. 
-        # We will maximize F1.
+        # 교차 검증을 통한 Optuna pruning 통합
+        # 표준 cross_val_score는 pruning을 쉽게 지원하지 않으므로,
+        # F1에 대해 더 단순한 루프나 표준 CV를 사용합니다.
+        # 단순성과 F1의 견고함을 위해 cross_val_score를 사용합니다.
+        # CV 내부의 Pruning은 수동 루프 없이는 복잡합니다.
+        # F1을 최대화합니다.
         
         scores = cross_val_score(model, self.X_train, self.y_train, cv=cv, scoring='f1')
         return scores.mean()
@@ -114,11 +114,11 @@ class ModelOptimizer:
 def run_optimization():
     os.makedirs(OUTPUT_DIR, exist_ok=True)
     
-    # 1. Load Data
+    # 1. 데이터 로드
     print(f"Loading Dataset: {DATASET_NAME}")
     X_train, y_train, X_test, y_test = load_data(DATASET_NAME)
     
-    # Calc ratio for final model
+    # 최종 모델을 위한 비율 계산
     n_pos = sum(y_train)
     n_neg = len(y_train) - n_pos
     scale_pos_weight = n_neg / n_pos if n_pos > 0 else 1.0
@@ -141,16 +141,16 @@ def run_optimization():
         
         study.optimize(optimizer.objective, n_trials=N_TRIALS, show_progress_bar=True)
         
-        print("\nOptimization Finished.")
+        print("\n최적화 완료.")
         print(f"Best Trial F1: {study.best_value:.4f}")
         print("Best Params:", study.best_params)
         
-        # --- Final Evaluation logic ---
-        print(f"\nTraining Final {model_name} with Best Params...")
+        # --- 최종 평가 로직 ---
+        print(f"\n최적 파라미터로 최종 {model_name} 학습 중...")
         
         best_params = study.best_params
         
-        # Re-instantiate with Best Params + Fixed Params needed for training
+        # 최적 파라미터 + 학습에 필요한 고정 파라미터로 재인스턴스화
         if model_name == 'XGBoost':
             final_model = XGBClassifier(
                 booster='dart', grow_policy='depthwise', n_estimators=1000, eval_metric='logloss',
@@ -163,24 +163,24 @@ def run_optimization():
             
         final_model.fit(X_train, y_train)
         
-        # Predict Probabilities
+        # 확률 예측
         y_prob = final_model.predict_proba(X_test)[:, 1]
         
-        # --- Threshold Tuning ---
-        print("Optimizing Prediction Threshold...")
+        # --- 임계값 튜닝 ---
+        print("예측 임계값 최적화 중...")
         best_thresh, best_f1_test = find_optimal_threshold(y_test, y_prob)
         
-        # Apply Threshold
+        # 임계값 적용
         y_pred_opt = (y_prob >= best_thresh).astype(int)
         
-        # Final Metrics
+        # 최종 지표
         roc_auc = roc_auc_score(y_test, y_prob)
-        print("\n--- Final Test Report (Optimized Threshold) ---")
+        print("\n--- 최종 테스트 리포트 (최적 임계값 적용) ---")
         print(f"Best Threshold: {best_thresh:.2f}")
         print(f"ROC AUC: {roc_auc:.4f}")
         print(classification_report(y_test, y_pred_opt))
         
-        # Save Report
+        # 리포트 저장
         result_text = (
             f"Model: {model_name}\n"
             f"Dataset: {DATASET_NAME}\n"
@@ -195,7 +195,7 @@ def run_optimization():
         save_path = os.path.join(OUTPUT_DIR, f"{model_name.lower()}_optimization_report.txt")
         with open(save_path, "w") as f:
             f.write(result_text)
-        print(f"Results saved to {save_path}")
+        print(f"결과가 {save_path}에 저장되었습니다.")
 
 if __name__ == "__main__":
     run_optimization()
