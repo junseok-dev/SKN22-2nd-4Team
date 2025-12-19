@@ -1,0 +1,17 @@
+Model: LightGBM (No Class Weights)
+Dataset: original
+Best Params: {'num_leaves': 20, 'max_depth': 11, 'lambda_l1': 0.6720930050156113, 'lambda_l2': 0.8241925264876453, 'feature_fraction': 0.8856351733429728, 'bagging_fraction': 0.5370223258670452, 'bagging_freq': 3, 'min_child_samples': 16}
+Best Validation F1: 0.8247091557823311
+Test ROC AUC: 0.9119221411192214
+Optimal Threshold: 0.38
+Test F1 (Optimized): 0.8727272727272727
+
+Classification Report:
+              precision    recall  f1-score   support
+
+         0.0       0.97      0.99      0.98       548
+         1.0       0.96      0.80      0.87        90
+
+    accuracy                           0.97       638
+   macro avg       0.96      0.90      0.93       638
+weighted avg       0.97      0.97      0.97       638

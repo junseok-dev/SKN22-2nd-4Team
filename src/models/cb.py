@@ -12,35 +12,27 @@ from optuna.samplers import TPESampler
 from optuna.pruners import HyperbandPruner
 
 # --- 설정 (Configuration) ---
-DATA_PATH = r'c:\Workspaces\SKN22-2nd-4Team\data\01_raw\train.csv'
+DATA_DIR = r'c:\Workspaces\SKN22-2nd-4Team\data\03_resampled'
 OUTPUT_DIR = r'c:\Workspaces\SKN22-2nd-4Team\data\05_optimized'
 RANDOM_STATE = 42
-N_TRIALS = 10 
+N_TRIALS = 10
 
 def load_data():
     """
-    원본 raw 데이터를 로드하고 Stratified Split을 수행합니다.
-    CatBoost의 native categorical handling을 위해 raw string 상태를 유지합니다.
+    저장된 Split 데이터를 로드합니다.
+    preprocess_and_split.py 에서 생성된 파일을 사용합니다.
     """
-    print(f"데이터 로드 경로: {DATA_PATH}")
-    df = pd.read_csv(DATA_PATH)
+    train_x_path = os.path.join(DATA_DIR, "X_train_original.csv")
+    train_y_path = os.path.join(DATA_DIR, "y_train_original.csv")
+    test_x_path = os.path.join(DATA_DIR, "X_test.csv")
+    test_y_path = os.path.join(DATA_DIR, "y_test.csv")
     
-    # 1. 최소한의 전처리: 이진(Binary) 변수만 0/1로 변환 (CatBoost도 가능하지만 명시적 변환 권장)
-    binary_map = {'yes': 1, 'no': 0}
-    df['international_plan'] = df['international_plan'].map(binary_map)
-    df['voice_mail_plan'] = df['voice_mail_plan'].map(binary_map)
-    df['churn'] = df['churn'].map(binary_map)
+    print(f"데이터 로드 경로: {DATA_DIR}")
     
-    # 2. 피처와 타겟 분리
-    X = df.drop('churn', axis=1)
-    y = df['churn']
-    
-    # 3. Stratified Split (15% Test, 85% Train - 기존 프로젝트와 동일한 비율)
-    X_train, X_test, y_train, y_test = train_test_split(
-        X, y, test_size=0.15, stratify=y, random_state=RANDOM_STATE
-    )
-    
-    print(f"학습 데이터 크기: {X_train.shape}, 테스트 데이터 크기: {X_test.shape}")
+    X_train = pd.read_csv(train_x_path)
+    y_train = pd.read_csv(train_y_path).values.ravel()
+    X_test = pd.read_csv(test_x_path)
+    y_test = pd.read_csv(test_y_path).values.ravel()
     
     return X_train, y_train, X_test, y_test
 
@@ -67,7 +59,7 @@ class ModelOptimizer:
         self.cat_features = cat_features
         
     def objective(self, trial):
-        # 학습 데이터 안에서도 또 쪼개서 검증 (교차 검증)
+        # 학습 데이터 안에서도 또 쪼개서 검증 (CV)
         cv = StratifiedKFold(n_splits=3, shuffle=True, random_state=RANDOM_STATE)
         
         params = {
@@ -79,7 +71,6 @@ class ModelOptimizer:
             'allow_writing_files': False,
             'eval_metric': 'F1',
             'cat_features': self.cat_features,
-            'auto_class_weights': 'Balanced', # 클래스 불균형 처리를 위한 가중치 추가
             'bagging_temperature': trial.suggest_float('bagging_temperature', 0.0, 1.0),
             'depth': trial.suggest_int('depth', 4, 10),
             'colsample_bylevel': trial.suggest_float('colsample_bylevel', 0.5, 1.0),
@@ -123,23 +114,22 @@ def get_trained_model():
     print(f"최고 CV F1 점수: {study.best_value:.4f}")
     print("최적 파라미터:", study.best_params)
     
-    # --- 최종 검증 (테스트 세트) ---
+    # --- 최종 검증 (Test Set) ---
     print(f"\n최종 모델 학습 및 테스트 데이터 평가 중...")
     
     final_model = CatBoostClassifier(
         boosting_type='Ordered', bootstrap_type='Bayesian', 
-        iterations=200, 
+        iterations=1000, 
         random_state=RANDOM_STATE, verbose=0, 
         allow_writing_files=False, 
         cat_features=cat_features,
-        auto_class_weights='Balanced', # 최종 모델에도 불균형 가중치 적용
         **study.best_params
     )
     
-    # 학습 데이터 전체로 학습
+    # Train 데이터 전체로 학습
     final_model.fit(X_train, y_train)
     
-    # 1. 테스트 세트 평가
+    # 1. Test Set 평가
     y_prob_val = final_model.predict_proba(X_test)[:, 1]
     
     # 임계값 튜닝
@@ -147,7 +137,7 @@ def get_trained_model():
     y_pred_val = (y_prob_val >= best_thresh).astype(int)
     
     # 리포트 출력
-    print("\n--- 최종 결과 리포트 (테스트 세트) ---")
+    print("\n--- 최종 결과 리포트 (Test Set) ---")
     print(f"최적 임계값: {best_thresh:.2f}")
     print(confusion_matrix(y_test, y_pred_val))
     report = classification_report(y_test, y_pred_val)

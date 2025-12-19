@@ -1,20 +1,16 @@
-Model: CatBoost
-Best Params: {'bagging_temperature': 0.3745401188473625, 'depth': 10, 'colsample_bylevel': 0.8659969709057025}
-Best CV F1: 0.8467554559787569
-Test ROC AUC: 0.9109
-Optimal Threshold: 0.37
-Test F1 (Optimized): 0.8795180722891566
-
-Confusion Matrix:
-[[545   3]
- [ 17  73]]
+Model: CatBoost (Raw Data)
+Best Params: {'learning_rate': 0.14447746112718687, 'depth': 5, 'l2_leaf_reg': 0.11400863701127326, 'bagging_temperature': 0.5924145688620425, 'colsample_bylevel': 0.5232252063599989}
+Best CV F1: 0.8319080556196862
+Test ROC AUC: 0.9093065693430655
+Optimal Threshold: 0.54
+Test F1 (Optimized): 0.8606060606060606
 
 Classification Report:
               precision    recall  f1-score   support
 
-         0.0       0.97      0.99      0.98       548
-         1.0       0.96      0.81      0.88        90
+           0       0.97      0.99      0.98       548
+           1       0.95      0.79      0.86        90
 
-    accuracy                           0.97       638
-   macro avg       0.97      0.90      0.93       638
-weighted avg       0.97      0.97      0.97       638
+    accuracy                           0.96       638
+   macro avg       0.96      0.89      0.92       638
+weighted avg       0.96      0.96      0.96       638
