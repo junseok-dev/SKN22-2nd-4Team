@@ -1,7 +1,7 @@
 streamlit
 pandas
 seaborn
-pickle5
+# pickle5
 catboost
 plotly
 scikit-learn
